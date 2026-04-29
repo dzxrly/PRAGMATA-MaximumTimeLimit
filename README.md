@@ -16,14 +16,13 @@
 > [!CAUTION]
 > Please backup your save before using! / 警告：使用前请备份存档！
 
-A mod for `Monster Hunter Stories 3` that allows players to lock the nest rarity to the maximum level. / 用于
-`怪物猎人物语3`的巢穴锁定至最高稀有度MOD。
+A mod for `PRAGMATA` that allows players to maximum the time limitation of the simulation mini game. / 用于`PRAGMATA`的模拟游戏最大化时间上限MOD。 
 
 ---
 
 ## Requirements:
 
-- [REFramework](https://github.com/praydog/REFramework-nightly/releases) (≥ Nightly 01298)
+- [REFramework](https://github.com/praydog/REFramework-nightly/releases) (≥ Nightly 01336)
 
 ## Mod Download:
 
@@ -31,18 +30,16 @@ A mod for `Monster Hunter Stories 3` that allows players to lock the nest rarity
 
 ## How To Install:
 
-1. Install [REFramework](https://github.com/praydog/REFramework-nightly/releases) (≥ Nightly 01298);
-2. Download the mod;
-3. Unzip the mod (**ALL FILES**) to the Monster Hunter Stories 3 **ROOT** directory.
-4. When you install correctly, there will be a file in your `./reframework`, and they are:
-
-    - `./reframework/autorun/nest_rarity_locker.lua`
+1. Install [REFramework](https://github.com/praydog/REFramework-nightly/releases) (≥ Nightly 01336);
+2. Enable the LooseFileLoader;
+3. Download the mod;
+4. Unzip the mod (**ALL FILES**) to the `PRAGMATA` **ROOT** directory.
 
 ---
 
 ## 前置：
 
-- [REFramework](https://github.com/praydog/REFramework-nightly/releases) （≥ Nightly 01298）
+- [REFramework](https://github.com/praydog/REFramework-nightly/releases) （≥ Nightly 01336）
 
 ## MOD下载:
 
@@ -50,12 +47,10 @@ A mod for `Monster Hunter Stories 3` that allows players to lock the nest rarity
 
 ## 安装方式：
 
-1. 安装[REFramework](https://github.com/praydog/REFramework-nightly/releases) （≥ Nightly 01298）；
-2. 下载MOD；
-3. 将MOD解压缩（**所有文件**）后存放至Monster Hunter Stories 3**根目录**；
-4. 当你正确安装MOD后，在你的 `./reframework` 目录下应该有一个文件：
-
-    - `./reframework/autorun/nest_rarity_locker.lua`
+1. 安装[REFramework](https://github.com/praydog/REFramework-nightly/releases) （≥ Nightly 01336）；
+2. 开启LooseFileLoader；
+3. 下载MOD；
+4. 将MOD解压缩（**所有文件**）后存放至 `PRAGMATA` **根目录**。
 
 <div align="center">
 
