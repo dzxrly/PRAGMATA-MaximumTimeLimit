@@ -1,0 +1,43 @@
+name: Build and Release Mod
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release Version (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Run Patch Script
+        run: |
+          python main.py -i data/user3/natives/stm/singletonuserdata/missionuserdata.user.3 -o data/output/natives/stm/singletonuserdata/missionuserdata.user.3
+
+      - name: Package Mod (ZIP)
+        run: |
+          cd data/output
+          zip -r EasyMiniGame_Mod.zip natives/
+          mv EasyMiniGame_Mod.zip ../../
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          name: EasyMiniGame Mod ${{ github.event.inputs.version }}
+          files: EasyMiniGame_Mod.zip
+          draft: false
+          prerelease: false
