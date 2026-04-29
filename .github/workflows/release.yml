@@ -47,14 +47,14 @@ jobs:
           echo "version=${{ github.event.inputs.version }}" >> data/output/modinfo.ini
           cp assets/screenshot.png data/output/cover.png
           cd data/output
-          zip -r MaximumTimeLimit+${{ github.event.inputs.version }}.zip natives/ modinfo.ini cover.png
-          mv MaximumTimeLimit+${{ github.event.inputs.version }}.zip ../../
+          zip -r MaximumTimeLimit_${{ github.event.inputs.version }}.zip natives/ modinfo.ini cover.png
+          mv MaximumTimeLimit_${{ github.event.inputs.version }}.zip ../../
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.version }}
           name: MaximumTimeLimit Mod ${{ github.event.inputs.version }}
-          files: MaximumTimeLimit+${{ github.event.inputs.version }}.zip
+          files: MaximumTimeLimit_${{ github.event.inputs.version }}.zip
           draft: false
           prerelease: false
