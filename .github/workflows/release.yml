@@ -27,17 +27,34 @@ jobs:
         run: |
           python main.py -i data/user3/natives/stm/singletonuserdata/missionuserdata.user.3 -o data/output/natives/stm/singletonuserdata/missionuserdata.user.3
 
+      - name: Update version.json
+        run: |
+          jq '.version = "${{ github.event.inputs.version }}"' version.json > temp.json && mv temp.json version.json
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add version.json
+          git commit -m "chore: update version to ${{ github.event.inputs.version }}" || echo "No changes to commit"
+          git push || echo "No changes to push"
+
       - name: Package Mod (ZIP)
         run: |
+          echo "name=MaximumTimeLimit" > data/output/modinfo.ini
+          echo "description=A mod for PRAGMATA that allows players to maximum the time limitation of the simulation mini game." >> data/output/modinfo.ini
+          echo "author=Egg Targaryen" >> data/output/modinfo.ini
+          echo "screenshot=cover.png" >> data/output/modinfo.ini
+          echo "category=Gameplay" >> data/output/modinfo.ini
+          echo "homepage=https://www.nexusmods.com/pragmata/mods/172" >> data/output/modinfo.ini
+          echo "version=${{ github.event.inputs.version }}" >> data/output/modinfo.ini
+          cp assets/screenshot.png data/output/cover.png
           cd data/output
-          zip -r EasyMiniGame_Mod.zip natives/
-          mv EasyMiniGame_Mod.zip ../../
+          zip -r MaximumTimeLimit+${{ github.event.inputs.version }}.zip natives/ modinfo.ini cover.png
+          mv MaximumTimeLimit+${{ github.event.inputs.version }}.zip ../../
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.version }}
-          name: EasyMiniGame Mod ${{ github.event.inputs.version }}
-          files: EasyMiniGame_Mod.zip
+          name: MaximumTimeLimit Mod ${{ github.event.inputs.version }}
+          files: MaximumTimeLimit+${{ github.event.inputs.version }}.zip
           draft: false
           prerelease: false
