@@ -43,7 +43,7 @@ jobs:
           echo "author=Egg Targaryen" >> data/output/modinfo.ini
           echo "screenshot=cover.png" >> data/output/modinfo.ini
           echo "category=Gameplay" >> data/output/modinfo.ini
-          echo "homepage=https://www.nexusmods.com/pragmata/mods/172" >> data/output/modinfo.ini
+          echo "homepage=https://www.nexusmods.com/pragmata/mods/136" >> data/output/modinfo.ini
           echo "version=${{ github.event.inputs.version }}" >> data/output/modinfo.ini
           cp assets/screenshot.png data/output/cover.png
           cd data/output
