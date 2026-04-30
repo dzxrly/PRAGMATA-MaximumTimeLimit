@@ -29,7 +29,9 @@ def debug():
     print(f"[*] RSZ   : {rsz_path}")
     print("-" * 50)
 
-    success = patch_mission_user_data(input_file, output_file, rsz_path)
+    success = patch_mission_user_data(
+        input_file, output_file, rsz_path, [3410781912, 3115479535], 99999.0
+    )
 
     print("-" * 50)
     if success:

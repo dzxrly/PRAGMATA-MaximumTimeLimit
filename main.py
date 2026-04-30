@@ -101,7 +101,7 @@ class User3Parser:
         self.typedb = typedb
         self.instance_starts: dict[int, int] = {}
         self.instance_classes: dict[int, ClassDef] = {}
-        self._diag_limit = 20
+        self._diag_limit = 9999
         self._diag_printed = 0
         self._diag_oob_count = 0
         self._diag_suspicious_count = 0
@@ -168,7 +168,9 @@ class User3Parser:
             self.instance_starts[idx] = cursor
             cursor = self._parse_instance(cursor, cls)
 
-        suppressed = (self._diag_oob_count + self._diag_suspicious_count) - self._diag_printed
+        suppressed = (
+            self._diag_oob_count + self._diag_suspicious_count
+        ) - self._diag_printed
         if self._diag_oob_count or self._diag_suspicious_count:
             print(
                 "[DIAG] Summary:"
@@ -193,7 +195,7 @@ class User3Parser:
                     return cursor
                 count = self._i32(cursor)
                 if count < 0 or count > 100000:
-                    raw = list(self.buf[cursor:cursor+4])
+                    raw = list(self.buf[cursor : cursor + 4])
                     self._diag(
                         f"  [DIAG] Suspicious array count={count} at cursor={cursor:#x}: bytes={raw} class={cls.name} field={fld.name}",
                         "suspicious",
@@ -216,45 +218,71 @@ def _is_reasonable_f32(v: float) -> bool:
     return (-1.0e9 < v < 1.0e9) and (v == v)
 
 
+def _is_plausible_limit_value_f(v: float) -> bool:
+    # Exclude denormal garbage values often seen when mis-reading object refs as float.
+    if not _is_reasonable_f32(v):
+        return False
+    return v == 0.0 or abs(v) >= 0.1
+
+
+def _looks_like_condition_unit_at(buf: bytearray, pos: int) -> bool:
+    """
+    Validate the binary layout around `pos` matches ConditionUnit:
+      Hash + LimitValue + LimitValueF + Trigger + Guid + PropContextIDList(array)
+      + UniqueID(Guid) + DescText + DescText2Line + IsNewGamePlus + Reward refs...
+    """
+    buf_len = len(buf)
+    if pos + 36 > buf_len:
+        return False
+
+    limit_i = struct.unpack_from("<i", buf, pos + 4)[0]
+    limit_f = struct.unpack_from("<f", buf, pos + 8)[0]
+    prop_count = struct.unpack_from("<i", buf, pos + 32)[0]
+    if not (_is_reasonable_i32(limit_i) and _is_plausible_limit_value_f(limit_f)):
+        return False
+    # Keep array count bounded to reduce false positives from random data.
+    if not (0 <= prop_count <= 512):
+        return False
+
+    arr_data_pos = _align(pos + 36, 4)
+    arr_end = arr_data_pos + prop_count * 4
+    unique_id_pos = _align(arr_end, 8)
+    if unique_id_pos + 33 > buf_len:
+        return False
+
+    is_new_game_plus = buf[unique_id_pos + 24]
+
+    # Soft shape check: this bool field should be 0/1 in real ConditionUnit data.
+    if is_new_game_plus not in (0, 1):
+        return False
+
+    return True
+
+
 def _fallback_patch_condition_unit(
-    buf: bytearray, target_hash: int, patch_value: float
+    buf: bytearray, target_hashes: set[int], patch_value: float
 ) -> tuple[int, list[int], list[tuple[int, float, float]]]:
     """
     Fallback path:
     scan for ConditionUnitBase signature directly in binary and patch LimitValueF (+8).
     """
-    pat = struct.pack("<I", target_hash)
     patch_count = 0
     patched_offsets: list[int] = []
     patched_samples: list[tuple[int, float, float]] = []
-    pos = 0
     buf_len = len(buf)
+    for pos in range(0, buf_len - 35, 4):
+        current_hash = struct.unpack_from("<I", buf, pos)[0]
+        if current_hash not in target_hashes:
+            continue
 
-    while True:
-        pos = buf.find(pat, pos)
-        if pos < 0:
-            break
+        if not _looks_like_condition_unit_at(buf, pos):
+            continue
 
-        # ConditionUnitBase layout starts with:
-        # Hash(U32) + LimitValue(S32) + LimitValueF(F32) + TriggerNameHash(U32) + ...
-        if pos + 36 <= buf_len:
-            limit_i = struct.unpack_from("<i", buf, pos + 4)[0]
-            limit_f = struct.unpack_from("<f", buf, pos + 8)[0]
-            prop_count = struct.unpack_from("<i", buf, pos + 32)[0]
-
-            # Heuristic guard to avoid patching unrelated hash occurrences.
-            if (
-                _is_reasonable_i32(limit_i)
-                and _is_reasonable_f32(limit_f)
-                and 0 <= prop_count <= 4096
-            ):
-                before = limit_f
-                struct.pack_into("<f", buf, pos + 8, patch_value)
-                patch_count += 1
-                patched_offsets.append(pos)
-                patched_samples.append((pos, before, patch_value))
-
-        pos += 4
+        before = struct.unpack_from("<f", buf, pos + 8)[0]
+        struct.pack_into("<f", buf, pos + 8, patch_value)
+        patch_count += 1
+        patched_offsets.append(pos)
+        patched_samples.append((pos, before, patch_value))
 
     return patch_count, patched_offsets, patched_samples
 
@@ -278,7 +306,7 @@ def patch_mission_user_data(
     input_file: Path,
     output_file: Path,
     rsz_path: Path,
-    target_hash: int = 3410781912,
+    target_hashes: int | list[int] = 3410781912,
     patch_value: float = 99999.0,
 ) -> bool:
     if not input_file.exists():
@@ -289,6 +317,11 @@ def patch_mission_user_data(
     typedb = TypeDB(rsz_path)
     if not typedb.classes:
         return False
+
+    if isinstance(target_hashes, int):
+        target_hash_set = {target_hashes}
+    else:
+        target_hash_set = set(target_hashes)
 
     print(f"Reading {input_file}...")
     try:
@@ -318,9 +351,9 @@ def patch_mission_user_data(
             except struct.error:
                 continue
 
-            if actual_hash == target_hash:
+            if actual_hash in target_hash_set:
                 print(
-                    f"Found ConditionUnit [{idx}] with target Hash {target_hash} at offset {start_pos:#x}"
+                    f"Found ConditionUnit [{idx}] with target Hash {actual_hash} at offset {start_pos:#x}"
                 )
                 print(f"  -> Original LimitValueF = {limit_val_f:.1f}")
 
@@ -330,8 +363,8 @@ def patch_mission_user_data(
 
     if patch_count == 0:
         print("Primary parser found no matches, trying binary-signature fallback...")
-        fallback_count, fallback_offsets, fallback_samples = _fallback_patch_condition_unit(
-            parser.buf, target_hash, patch_value
+        fallback_count, fallback_offsets, fallback_samples = (
+            _fallback_patch_condition_unit(parser.buf, target_hash_set, patch_value)
         )
         patch_count += fallback_count
         if fallback_count > 0:
@@ -387,8 +420,9 @@ def main():
     parser.add_argument(
         "--hash",
         type=int,
-        default=3410781912,
-        help="Target Hash to search for (default: 3410781912)",
+        nargs="+",
+        default=[3410781912, 3115479535],
+        help="Target Hash list (space-separated), e.g. --hash 3410781912 123456789",
     )
     parser.add_argument(
         "--limit",
@@ -399,8 +433,12 @@ def main():
 
     args = parser.parse_args()
     input_path = Path(args.input)
-    output_path = Path(args.output) if args.output else build_default_output_path(input_path)
-    patch_mission_user_data(input_path, output_path, Path(args.rsz), args.hash, args.limit)
+    output_path = (
+        Path(args.output) if args.output else build_default_output_path(input_path)
+    )
+    patch_mission_user_data(
+        input_path, output_path, Path(args.rsz), args.hash, args.limit
+    )
 
 
 if __name__ == "__main__":

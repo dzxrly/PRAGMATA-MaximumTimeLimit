@@ -50,11 +50,34 @@ jobs:
           zip -r MaximumTimeLimit_${{ github.event.inputs.version }}.zip natives/ modinfo.ini cover.png
           mv MaximumTimeLimit_${{ github.event.inputs.version }}.zip ../../
 
+      - name: Generate checksums
+        run: |
+          sha256sum "MaximumTimeLimit_${{ github.event.inputs.version }}.zip" > "MaximumTimeLimit_${{ github.event.inputs.version }}.zip.sha256"
+
+      - name: Prepare release notes
+        run: |
+          echo "### 版本下载 / Release Downloads" > release_notes.md
+          echo "- **[MaximumTimeLimit_${{ github.event.inputs.version }}.zip](https://github.com/${{ github.repository }}/releases/download/${{ github.event.inputs.version }}/MaximumTimeLimit_${{ github.event.inputs.version }}.zip)**" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### 更新日志 / Changelogs" >> release_notes.md
+          if [ -f CHANGELOGS.md ]; then
+            cat CHANGELOGS.md >> release_notes.md
+          else
+            echo "未找到CHANGELOGS.md文件 / CHANGELOGS.md file not found." >> release_notes.md
+          fi
+          echo "" >> release_notes.md
+          echo "### 文件校验 / Checksums" >> release_notes.md
+          echo "- \`MaximumTimeLimit_${{ github.event.inputs.version }}.zip\` SHA-256: $(cut -d ' ' -f1 MaximumTimeLimit_${{ github.event.inputs.version }}.zip.sha256)" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### 打包时间 / Build Time" >> release_notes.md
+          echo "- $(date)" >> release_notes.md
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.version }}
           name: MaximumTimeLimit Mod ${{ github.event.inputs.version }}
           files: MaximumTimeLimit_${{ github.event.inputs.version }}.zip
+          body_path: release_notes.md
           draft: false
           prerelease: false
