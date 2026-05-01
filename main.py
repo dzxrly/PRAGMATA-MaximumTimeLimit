@@ -927,9 +927,14 @@ def patch_mission_user_data(
     )
     print(f"\nTotal patched (target hash, LimitValueF): {patched}")
 
-    print("\n--- DescText override (Hash=2168305544) ---")
-    desc_override_n = patch_desc_msgids_for_hash_2168305544(buf, model)
-    print(f"Desc override patched (separate count): {desc_override_n}")
+    desc_override_n = 0
+    if no_damage:
+        print("\n--- DescText override (Hash=2168305544, tied to no-damage) ---")
+        desc_override_n = patch_desc_msgids_for_hash_2168305544(buf, model)
+        print(f"Desc override patched (separate count): {desc_override_n}")
+    else:
+        print("\n--- DescText override ---")
+        print("Desc override skipped (enable with --no-damage).")
 
     no_damage_n = 0
     if no_damage:
