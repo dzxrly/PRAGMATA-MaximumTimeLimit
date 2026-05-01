@@ -40,7 +40,7 @@ def get_content_by_requests(
             response.content.decode(response.encoding) if decode else response.content
         )
     except Exception as e:
-        return ""
+        return e
     return content
 
 

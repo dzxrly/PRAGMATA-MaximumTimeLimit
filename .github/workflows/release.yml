@@ -25,7 +25,7 @@ jobs:
 
       - name: Run Patch Script
         run: |
-          python main.py -i data/user3/natives/stm/singletonuserdata/missionuserdata.user.3 -o data/output/natives/stm/singletonuserdata/missionuserdata.user.3
+          python main.py -i data/user3/natives/stm/singletonuserdata/missionuserdata.user.3 -o data/output/natives/stm/singletonuserdata/missionuserdata.user.3 --no-dump-debug
 
       - name: Update version.json
         run: |
