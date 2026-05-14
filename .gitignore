@@ -196,3 +196,6 @@ cython_debug/
 *.sh
 debug/
 .temp/
+
+.claude
+.codex
